@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>game-kit · evolvai.me games</title>
+<meta name="description" content="game-kit: one command ships the next version of any EvolvAI game to Google Play, with tests, signing and store checks on the way.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Same teal and warm paper as evolvai-me.github.io; one column, the command is the hero. */
+:root {
+  --bg: #fbf8f2; --surface: #ffffff; --ink: #1d2b2f; --muted: #5b6b70; --line: #e3ded3;
+  --accent: #0e6f73; --accent-soft: #dcefee; --warm: #b5651d; --warm-soft: #f6e6d6;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #10191b; --surface: #16231f; --ink: #e8eef0; --muted: #a9b6ba; --line: #26383a;
+          --accent: #6fd0cf; --accent-soft: #173837; --warm: #e59a55; --warm-soft: #3a2a1b; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.65 var(--body); }
+main { max-width: 920px; margin: 0 auto; display: grid; gap: 64px; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: clamp(2.3rem, 6vw, 3.8rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.7rem; font-weight: 800; }
+h3 { font-size: 1.08rem; font-weight: 600; }
+p { margin: 0; max-width: 64ch; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+code { font: 0.88em var(--mono); background: var(--accent-soft); padding: 1px 6px; border-radius: 4px; }
+.eyebrow { font: 600 0.78rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+section { display: grid; gap: 20px; }
+.back { font-size: 0.95rem; }
+
+.hero { display: grid; gap: 22px; }
+.lede { font-size: 1.22rem; color: var(--muted); }
+.terminal { background: #0f1d1e; color: #d8efee; border-radius: 12px; padding: 20px 22px; font: 0.95rem/1.7 var(--mono);
+  box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 12px 32px rgba(14,111,115,.12); overflow-x: auto; }
+.terminal .cmd { color: #6fd0cf; font-weight: 600; font-size: 1.25rem; }
+.terminal .q { color: #f1c27d; }
+.terminal .dim { color: #7f9a9b; }
+.terminal .ok { color: #8fe0a8; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0; }
+.steps li { display: grid; gap: 8px; padding: 14px 14px 0 0; border-top: 4px solid var(--accent); align-content: start; }
+.steps li.owner { border-top-color: var(--warm); }
+.steps .who { font: 600 0.7rem/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.steps li.owner .who { color: var(--warm); }
+.steps .what { font-weight: 600; }
+.steps .how { font-size: 0.92rem; color: var(--muted); line-height: 1.45; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px 28px; }
+.card { display: grid; gap: 6px; align-content: start; }
+.card p { color: var(--muted); font-size: 0.97rem; }
+
+.table { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 0.74rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+
+.checks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 24px; }
+.checks li { padding-left: 28px; position: relative; }
+.checks li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+.note { border-left: 3px solid var(--warm); background: var(--warm-soft); padding: 16px 18px; border-radius: 0 10px 10px 0; display: grid; gap: 6px; }
+footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 18px; display: grid; gap: 4px; }
+</style>
+</head>
+<body>
+<main>
+
+<header class="hero">
+  <a class="back" href="../">← evolvai.me games</a>
+  <div class="eyebrow">game-kit · our release pipeline</div>
+  <h1>One command ships the next version to Google Play.</h1>
+  <p class="lede">game-kit is how the EvolvAI team releases its Android games. A developer types one command in a game's repository, answers one question, and the new version is built, tested, signed and on Google Play's test track about fifteen minutes later.</p>
+  <div class="terminal" role="img" aria-label="Example: running /game-kit:ship, answering yes, and the new version reaching Google Play">
+    <div class="cmd">/game-kit:ship</div>
+    <div class="q">Ship lahgat 1.1.5 → 1.1.6 to Play's internal track? Notes: <bdi dir="rtl" lang="ar">«تحسينات وإصلاحات صغيرة.»</bdi></div>
+    <div>yes</div>
+    <div class="dim">release PR opened · tests passed · merged · tagged v1.1.6</div>
+    <div class="dim">preflight ✓ · gate ✓ · signed bundle 45.4 MB ✓ · 16 KB check ✓</div>
+    <div class="ok">version 10 is on Google Play's internal track</div>
+  </div>
+</header>
+
+<section aria-labelledby="how">
+  <div class="eyebrow">How a release moves</div>
+  <h2 id="how">From a merged change to the store</h2>
+  <ol class="steps">
+    <li><span class="who">Developer</span><span class="what">Pull request</span><span class="how">Every test runs when a change is ready for review.</span></li>
+    <li><span class="who">Claude</span><span class="what">Release PR</span><span class="how">Version bump, release notes and a store-risk review.</span></li>
+    <li><span class="who">Pipeline</span><span class="what">Preflight</span><span class="how">The version, notes and store files are checked in about a minute.</span></li>
+    <li><span class="who">Pipeline</span><span class="what">Build and sign</span><span class="how">Tests, a signed bundle and Play's technical checks.</span></li>
+    <li><span class="who">Pipeline</span><span class="what">Test track</span><span class="how">Uploaded to Google Play for the team and testers.</span></li>
+    <li class="owner"><span class="who">Account owner</span><span class="what">Production</span><span class="how">Going live is always a person's decision.</span></li>
+  </ol>
+</section>
+
+<section aria-labelledby="why">
+  <div class="eyebrow">Why we built it</div>
+  <h2 id="why">Ship more games, with fewer mistakes</h2>
+  <div class="grid">
+    <div class="card"><h3>A new game costs one file</h3><p>Each game describes itself in a short manifest. Building, signing, checking and uploading are shared, so an improvement reaches every game at once.</p></div>
+    <div class="card"><h3>Anyone on the team can release</h3><p>No release depends on one person's laptop. The same steps run the same way for every developer.</p></div>
+    <div class="card"><h3>Nobody shares a login</h3><p>Signing keys stay in the pipeline's encrypted storage. Each developer uses their own Google account with access only to the games they work on.</p></div>
+    <div class="card"><h3>Mistakes stop early</h3><p>A wrong version, missing notes or an invalid store answer stops the release in about a minute, before anything reaches Google Play.</p></div>
+    <div class="card"><h3>The store page lives with the code</h3><p>Store text and screenshots are files in the game's repository: reviewed like code, checked against Play's limits, published in one step.</p></div>
+    <div class="card"><h3>Claude does the paperwork</h3><p>Release notes, store-risk reviews and the Play Console forms that have no API, filled in the developer's own browser.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="commands">
+  <div class="eyebrow">For the team</div>
+  <h2 id="commands">The commands</h2>
+  <div class="table" role="region" aria-label="Commands" tabindex="0">
+    <table>
+      <thead><tr><th>Command</th><th>What it does</th><th>You do</th></tr></thead>
+      <tbody>
+        <tr><td><code>/game-kit:ship</code></td><td>Releases the next version to Google Play's test track. In a game that isn't set up yet, it shows what's missing and offers to set it up.</td><td>Say yes once</td></tr>
+        <tr><td><code>/game-kit:ship closed</code></td><td>The same, then moves the build on to the closed test.</td><td>Say yes once</td></tr>
+        <tr><td><code>/game-kit:new-game</code></td><td>Prepares a new game's repository for releases.</td><td>Review the change</td></tr>
+        <tr><td><code>/game-kit:console</code></td><td>Fills a Play Console form that has no API, in your own browser.</td><td>Approve each submit</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="checks">
+  <div class="eyebrow">Before anything reaches Google Play</div>
+  <h2 id="checks">What every release checks</h2>
+  <ul class="checks">
+    <li>The release comes from the main branch and matches the app's version</li>
+    <li>The version number is new to Google Play</li>
+    <li>Release notes exist, within Play's length limit</li>
+    <li>Store answers use only fixed choices, never free text</li>
+    <li>Store text and images meet Play's sizes and limits</li>
+    <li>Every automated test passes</li>
+    <li>The build is signed with the game's own key</li>
+    <li>Native code meets Play's 16 KB page requirement</li>
+  </ul>
+</section>
+
+<section aria-labelledby="rules">
+  <div class="eyebrow">Guardrails</div>
+  <h2 id="rules">What stays with people</h2>
+  <div class="note">
+    <h3>Production is never automatic</h3>
+    <p>The pipeline can reach Google Play's test tracks only. Releasing to everyone is done by the account owner, by hand.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>A yes before every submit</h3><p>When Claude fills a Play Console form, it shows every value with a screenshot and waits for approval. It never types a password or solves a CAPTCHA.</p></div>
+    <div class="card"><h3>Store answers are reviewed</h3><p>Content rating, ads and data-safety answers live in a reviewed file. Claude types only what that file says.</p></div>
+    <div class="card"><h3>Tested before players</h3><p>Every new game runs a closed test with real testers before it can go to production, as Google requires.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="games">
+  <div class="eyebrow">Today</div>
+  <h2 id="games">Where it runs</h2>
+  <p>game-kit releases our Flutter and Capacitor games for Android. «لهجات» (Lahgat) ships every version through it. iPhone support comes later.</p>
+</section>
+
+<footer>
+  <span>game-kit is internal to the EvolvAI team. Team members: ask the owner for access.</span>
+  <span><a href="../">evolvai.me games</a></span>
+</footer>
+
+</main>
+</body>
+</html>
